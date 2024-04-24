@@ -1,5 +1,10 @@
+from typing import Generator
+
 import scrapy
 from scrapy.http import Response
+
+
+ratings = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 
 
 class SkrapBooksSpider(scrapy.Spider):
@@ -7,7 +12,7 @@ class SkrapBooksSpider(scrapy.Spider):
     allowed_domains = ["books.toscrape.com"]
     start_urls = ["https://books.toscrape.com/"]
 
-    def parse(self, response: Response, **kwargs):
+    def parse(self, response: Response, **kwargs) -> Generator:
         product_pod = response.css(".product_pod")
 
         for book in product_pod:
@@ -20,15 +25,13 @@ class SkrapBooksSpider(scrapy.Spider):
         if next_page:
             yield response.follow(next_page, callback=self.parse)
 
-    def _parse_single_book(self, response):
-        ratings = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
-
+    def _parse_single_book(self, response: Response) -> Generator:
         title = response.css(".product_main > h1::text").get()
         price = response.css(".price_color::text").get()
         amount_in_stock = response.xpath("//tr/td/text()").getall()[5]
         rating = ratings.get(
-                response.css(".star-rating::attr(class)").get().split()[1], 0
-            )
+            response.css(".star-rating::attr(class)").get().split()[1], 0
+        )
         category = response.css(".breadcrumb > li > a::text").getall()[2]
         description = response.xpath('//*[@id="content_inner"]/article/p/text()').get()
         upc = response.css(".table.table-striped > tr")[0].css("td::text").get()
